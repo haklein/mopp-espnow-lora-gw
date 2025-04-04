@@ -96,6 +96,8 @@ void setup () {
 	Serial.begin (115200);
 	delay(5000);
 	Serial.println("LORA ESPNOW Gateway startup");
+	Serial.println("[LGFX] Init display");
+  lcd.begin();
 	Serial.println("[EspNow] Set station mode");
 	WiFi.mode (WIFI_MODE_STA);
 	WiFi.disconnect (false);
@@ -118,7 +120,6 @@ void setup () {
     radio.setPacketReceivedAction(packetReceived);
     radio.startReceive();
   }
-  lcd.begin();
 
 
 	Serial.println("Setup complete");
