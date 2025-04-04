@@ -3,9 +3,20 @@
 #include <esp_wifi.h>
 #include <QuickEspNow.h>
 #include <RadioLib.h>
+#include <LovyanGFX.hpp>
+#include "ST7789.h"
 
 #define MAXLEN 512
 
+static LGFX lcd;
+
+uint64_t last_changed = millis();
+bool toggle = true;
+
+//SPIClass spi(0);
+// SPISettings spiSettings(4000000, MSBFIRST, SPI_MODE0);
+
+//SX1262 radio = new Module(LoRa_nss, LoRa_dio1, LoRa_nrst, LoRa_busy, spi, spiSettings); // SX1262
 SX1262 radio = new Module(LoRa_nss, LoRa_dio1, LoRa_nrst, LoRa_busy); // SX1262
 
 void printHexBuffer(const uint8_t* buffer, size_t len) {
@@ -51,6 +62,7 @@ void dataReceived (uint8_t* address, uint8_t* data, uint8_t len, signed int rssi
 }
 
 void onLoraReceive(){
+
 	int packetsize = radio.getPacketLength();
 	if (packetsize == 0) return;
 	Serial.print("[LoRa] Packet received, size: ");
@@ -94,15 +106,21 @@ void setup () {
 	SPI.begin(LoRa_SCK, LoRa_MISO, LoRa_MOSI, LoRa_nss);
 	Serial.println(F("[LoRa] SX12xx initializing ... "));
 	int state = radio.begin();  
-	if (state != RADIOLIB_ERR_NONE) Serial.println("[LoRa] ERROR: radiolib begin()");
-	radio.setFrequency(LORA_QRG/1000000.0);
-	radio.setBandwidth(250.0);
-	radio.setSpreadingFactor(7);
-	radio.setSyncWord(LORA_SYNCWORD); // alternative 0x66
-	radio.setOutputPower(LORA_POWER); // 14 = 25mW
-	radio.setCRC(false);
-	radio.setPacketReceivedAction(packetReceived);
-	radio.startReceive();
+	if (state != RADIOLIB_ERR_NONE) {
+    Serial.println("[LoRa] ERROR: radiolib begin()");
+  } else {
+    radio.setFrequency(LORA_QRG/1000000.0);
+    radio.setBandwidth(250.0);
+    radio.setSpreadingFactor(7);
+    radio.setSyncWord(LORA_SYNCWORD); // alternative 0x66
+    radio.setOutputPower(LORA_POWER); // 14 = 25mW
+    radio.setCRC(false);
+    radio.setPacketReceivedAction(packetReceived);
+    radio.startReceive();
+  }
+  lcd.begin();
+
+
 	Serial.println("Setup complete");
 }
 
@@ -111,4 +129,16 @@ void loop () {
 		onLoraReceive();
 		loraReceived=false;
 	}
+  if (last_changed + 2000 < millis()) {
+    last_changed = millis();
+    if (toggle) {
+      Serial.print(".");
+      toggle = false;
+      lcd.fillScreen(TFT_RED);
+    } else {
+      Serial.print(".");
+      toggle = true;
+      lcd.fillScreen(TFT_BLACK);
+    }
+  }
 }
